@@ -105,4 +105,38 @@ const returnComponent = async (req, res) => {
   }
 };
 
-module.exports = { addComponent, listComponents, borrowComponent, returnComponent };
+// Deletar componente (apenas ADM)
+const deleteComponent = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.log('❌ ID inválido para exclusão:', id);
+      return res.status(400).json({ error: 'ID inválido. O ID deve ser uma string não vazia!' });
+    }
+
+    if (req.user.tipo !== 'ADM') {
+      console.log('❌ Usuário não é ADM:', req.user.tipo);
+      return res.status(403).json({ error: 'Apenas administradores podem deletar componentes' });
+    }
+
+    const componentRef = db.collection('componentes').doc(id.trim());
+    const doc = await componentRef.get();
+
+    if (!doc.exists) {
+      console.log('❌ Componente não encontrado para exclusão:', id);
+      return res.status(404).json({ error: 'Componente não encontrado' });
+    }
+
+    await componentRef.delete();
+
+    console.log('✅ Componente deletado com sucesso:', id);
+    res.json({ message: 'Componente deletado com sucesso' });
+  } catch (error) {
+    console.error('🔥 Erro ao deletar componente:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+module.exports = { addComponent, listComponents, borrowComponent, returnComponent, deleteComponent  };
