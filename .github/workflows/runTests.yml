@@ -1,0 +1,62 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Install test dependencies
+        run: |
+          cd tests
+          npm install cypress jest supertest
+
+      - name: Start backend
+        run: |
+          cd backend
+          npm start &
+        env:
+          CI: true
+
+      - name: Start frontend
+        run: |
+          cd frontend
+          npm start &
+        env:
+          CI: true
+
+      - name: Wait for services
+        run: sleep 15
+
+      - name: Run Jest backend tests
+        run: |
+          cd tests
+          npm test
+
+      - name: Run Cypress tests
+        run: |
+          cd tests
+          npx cypress run
