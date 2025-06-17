@@ -45,7 +45,7 @@ const listComponents = async (req, res) => {
   try {
     let query = db.collection('componentes');
 
-    const { tipo, especificacao } = req.query;
+    const { tipo, especificacao, emprestadoPara } = req.query;
 
     if (tipo) {
       query = query.where('tipo', '==', tipo);
