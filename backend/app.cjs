@@ -1,4 +1,3 @@
-// backend/app.cjs
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
@@ -7,26 +6,40 @@ const componentRoutes = require('./routes/componentRoutes.cjs');
 
 const app = express();
 
-// Configura o CORS
 app.use(cors({
-  origin: 'http://localhost:3000', // Permite apenas requisições do frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos
-  allowedHeaders: ['Content-Type', 'Authorization'], // Cabeçalhos permitidos
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://inatel-box.vercel.app',
+    ];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.use(morgan('dev')); // Mostra logs das requisições no terminal
+app.use(morgan('dev'));
 app.use(express.json());
 
-// Rotas
 app.use('/auth', authRoutes);
 app.use('/components', componentRoutes);
+
+app.get('/', (req, res) => {
+  res.send('API online 🚀');
+});
+
 app.use((req, res, next) => {
   console.log(`🔹 Rota acessada: ${req.method} ${req.url}`);
   next();
 });
 
+const PORT = process.env.PORT || 5000;
+
 if (require.main === module) {
-  const PORT = 5000;
   app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
   });

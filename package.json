@@ -1,13 +1,5 @@
 {
   "dependencies": {
-    "cors": "^2.8.5",
-    "firebase": "^11.8.0",
-    "firebase-admin": "^13.4.0",
-    "morgan": "^1.10.0",
-    "react": "^19.1.0",
-    "react-icons": "^5.5.0",
-    "react-router-dom": "^7.6.0",
-    "react-scripts": "^5.0.1"
   },
   "devDependencies": {
     "cypress": "^14.2.1",
@@ -22,9 +14,7 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "setupFilesAfterEnv": [
-      "./tests/setup.cjs"
-    ],
+    "setupFilesAfterEnv": ["./tests/setup.cjs"],
     "testMatch": [
       "**/tests/integration/*.tests.cjs"
     ],

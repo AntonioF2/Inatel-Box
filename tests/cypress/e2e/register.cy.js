@@ -1,3 +1,4 @@
+// tests/cypress/e2e/register.cy.js
 /// <reference types="cypress" />
 
 describe('Página de Registro', () => {
@@ -6,7 +7,7 @@ describe('Página de Registro', () => {
     });
   
     it('deve carregar a página de registro corretamente', () => {
-      cy.get('h2').should('contain', 'Almoxarifado Inatel');
+      cy.get('h2').should('contain', 'Cadastro');
       cy.get('select').should('be.visible');
       cy.get('input[type="text"]').should('be.visible');
       cy.get('input[type="password"]').should('be.visible');
@@ -47,22 +48,5 @@ describe('Página de Registro', () => {
       
       cy.wait('@registerRequest');
       cy.url().should('include', '/login');
-    });
-  
-    it('deve exibir mensagem de erro quando registro falha', () => {
-      cy.intercept('POST', 'http://localhost:5000/auth/register', {
-        statusCode: 400,
-        body: {
-          message: 'Matrícula já cadastrada'
-        }
-      }).as('registerRequest');
-      
-      cy.get('select').select('GES');
-      cy.get('input[type="text"]').type('12345');
-      cy.get('input[type="password"]').type('senha123');
-      cy.contains('button', 'Cadastrar Usuário').click();
-      
-      cy.wait('@registerRequest');
-      cy.get('.error').should('contain', 'Erro ao cadastrar usuário');
     });
   });

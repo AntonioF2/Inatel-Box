@@ -1,38 +1,51 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register } from '../services/api'; // Importe a função de registro do serviço de API
+import { register } from '../services/api';
 
 const RegisterPage = () => {
   const [matricula, setMatricula] = useState('');
   const [senha, setSenha] = useState('');
-  const [curso, setCurso] = useState(''); // Estado para armazenar o curso selecionado
-  const [error, setError] = useState(''); // Estado para mensagens de erro
+  const [curso, setCurso] = useState('');
+  const [error, setError] = useState('');
+  const [isHovering, setIsHovering] = useState(false);
 
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    try {
-      // Verifica se os dados foram preenchidos
-      if (!matricula || !senha || !curso) {
-        alert('Preencha todos os campos!');
-        return;
-      }
-
-      // Faz a chamada ao backend para cadastrar o usuário
-      const response = await register(matricula, senha, curso);
-
-      console.log('Usuário cadastrado com sucesso:', response);
-      navigate('/login'); // Redireciona para a tela de login
-    } catch (error) {
-      setError('Erro ao cadastrar usuário: ' + error.message);
+    if (!matricula || !senha || !curso) {
+      alert('Preencha todos os campos!');
+      return;
     }
+
+    try {
+      const response = await register(matricula, senha, curso);
+      console.log('Usuário cadastrado:', response);
+      navigate('/login');
+    } catch (err) {
+      setError('Erro ao cadastrar usuário: ' + err.message);
+    }
+  };
+
+  const buttonStyle = {
+    padding: '12px',
+    fontSize: '16px',
+    backgroundColor: isHovering ? '#0056b3' : '#007bff',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    width: '100%',
+    marginTop: '10px',
+    transition: 'background-color 0.3s ease',
   };
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Almoxarifado Inatel</h1>
-      <h2 style={styles.title}>Cadastro</h2>
-      <div style={styles.form}>
+      
+
+      <div style={styles.card}>
+        <h2 style={styles.subtitle}>Cadastro</h2>
+
         <select
           style={styles.select}
           value={curso}
@@ -47,7 +60,7 @@ const RegisterPage = () => {
           <option value="GEP">Engenharia de Produção (GEP)</option>
           <option value="GEB">Engenharia Biomédica (GEB)</option>
         </select>
-        
+
         <input
           style={styles.input}
           type="text"
@@ -55,7 +68,7 @@ const RegisterPage = () => {
           value={matricula}
           onChange={(e) => setMatricula(e.target.value)}
         />
-        
+
         <input
           style={styles.input}
           type="password"
@@ -65,8 +78,13 @@ const RegisterPage = () => {
         />
 
         {error && <p style={styles.error}>{error}</p>}
-        
-        <button onClick={handleRegister} style={styles.button}>
+
+        <button
+          style={buttonStyle}
+          onClick={handleRegister}
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+        >
           Cadastrar Usuário
         </button>
       </div>
@@ -76,65 +94,64 @@ const RegisterPage = () => {
 
 const styles = {
   container: {
+    fontFamily: "'Nunito', sans-serif",
+    minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
     justifyContent: 'center',
-    height: '100vh',
-    width: '100vw',
-    backgroundColor: '#f0f0f0',
-    margin: 0,
-    padding: 0,
+    alignItems: 'center',
+    background: 'linear-gradient(135deg, #e0f7fa, #ffffff)',
+    padding: '20px',
+    boxSizing: 'border-box',
   },
   title: {
-    fontSize: '24px',
+    justifyContent: 'center',
+    fontSize: '28px',
     marginBottom: '20px',
+    textAlign: 'center',
     color: '#333',
   },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
+  card: {
+    backgroundColor: '#fff',
+    padding: '30px',
+    borderRadius: '12px',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
     width: '100%',
     maxWidth: '400px',
-    padding: '20px',
-    backgroundColor: '#f0f0f0',
     boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
   },
-  input: {
-    marginBottom: '10px',
-    padding: '12px',
-    fontSize: '16px',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-    width: '100%',
-    boxSizing: 'border-box',
+  subtitle: {
+    fontSize: '25px',
+    marginBottom: '30px',
+    color: '#333',
+    textAlign: 'center',
   },
   select: {
-    marginBottom: '10px',
     padding: '12px',
+    marginBottom: '15px',
     fontSize: '16px',
-    borderRadius: '4px',
+    borderRadius: '8px',
     border: '1px solid #ccc',
-    width: '100%',
     backgroundColor: '#fff',
     boxSizing: 'border-box',
   },
-  button: {
+  input: {
     padding: '12px',
+    marginBottom: '15px',
     fontSize: '16px',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    width: '100%',
-    marginBottom: '10px',
+    borderRadius: '8px',
+    border: '1px solid #ccc',
     boxSizing: 'border-box',
   },
   error: {
-    color: 'red',
-    fontSize: '14px',
+    color: '#b00020',
+    backgroundColor: '#f9d6d5',
+    padding: '8px',
+    borderRadius: '6px',
     marginBottom: '10px',
+    textAlign: 'center',
   },
 };
 

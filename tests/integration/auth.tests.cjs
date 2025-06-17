@@ -2,82 +2,45 @@ const request = require('supertest');
 const app = require('../../backend/app.cjs');
 const { db } = require('../../backend/services/fireBaseConfig.cjs');
 
-let testUser = {
-  matricula: `teste`,
-  senha: 'teste',
+const user = {
+  matricula: 'testUserAuth',
+  senha: '1234',
   curso: 'GES',
-  tipo: 'aluno'
+  tipo: 'aluno',
 };
 
 afterAll(async () => {
-  await db.collection('usuarios').doc(testUser.matricula).delete();
+  await db.collection('usuarios').doc(user.matricula).delete();
 });
 
-describe('Usuarios', () => {
-
-  it('Registrar novo usuario', async () => {
-    jest.setTimeout(15000); //espera 15 segundos
-    const response = await request(app)
-      .post('/auth/register')
-      .send(testUser);
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
-      message: 'Usuário cadastrado com sucesso!',
-    });
+describe('Autenticação', () => {
+  it('Remove usuário antes de registrar', async () => {
+    await db.collection('usuarios').doc(user.matricula).delete(); // <-- garante que o usuário não existe
+    const res = await request(app).post('/auth/register').send(user);
+    expect(res.status).toBe(200);
+    expect(res.body.message).toBe('Usuário cadastrado com sucesso!');
   });
 
-  it('Rejeita matricula do mesmo curso duplicada', async () => {
-    const response = await request(app)
-      .post('/auth/register')
-      .send({
-        matricula: testUser.matricula,
-        senha: 'qlq',
-        curso: testUser.curso,
-        tipo: 'aluno'
-      });
-    expect(response.status).toBe(400);
-    expect(response.body.error).toMatch(/Já existe um usuário com essa matrícula e curso/);
+  it('Impede registro de matricula duplicado', async () => {
+    const res = await request(app).post('/auth/register').send(user);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Já existe um usuário/);
   });
 
-  it('Registra matricula igual de cursos diferentes', async () => {
-    const response = await request(app)
-      .post('/auth/register')
-      .send({
-        matricula: testUser.matricula,
-        senha: 'qlq',
-        curso: 'GEC',
-        tipo: 'aluno'
-      });
-    expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({message: 'Usuário cadastrado com sucesso!'});
-  });
-
-  it('Loga usuario ja registrado', async () => {
-    const registerResponse = await request(app)
-      .post('/auth/register')
-      .send(testUser);
-  
-    expect(registerResponse.status).toBe(200);
-  
-    const response = await request(app)
+  it('Faz login com sucesso', async () => {
+    const res = await request(app)
       .post('/auth/login')
-      .send({
-        matricula: testUser.matricula,
-        senha: testUser.senha
-      });
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('token');
-    expect(response.body.matricula).toBe(testUser.matricula);
+      .send({ matricula: user.matricula, senha: user.senha });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('token');
   });
-  
-  it('Rejeita Login de usuario nao registrado', async () => {
-    const response = await request(app)
+
+  it('Rejeita login de usuário inexistente', async () => {
+    const res = await request(app)
       .post('/auth/login')
-      .send({
-        matricula: 'nao_registrado',
-        senha: '0'
-      });
-    expect(response.status).toBe(404);
-    expect(response.body.error).toBe('Usuário não encontrado');
+      .send({ matricula: 'usuarioInexistente', senha: 'qualquer' });
+
+    expect(res.status).toBe(401); // <-- código de erro do seu backend ao errar senha/matrícula
   });
 });

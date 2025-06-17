@@ -15,8 +15,8 @@ const Navbar = () => {
       <button onClick={handleBack} style={styles.backButton}>
         <FiArrowLeft size={20} style={{ marginRight: 5 }} />
       </button>
-      <h1 style={styles.title}>INATEL</h1>
-      <div style={{ width: 75 }} /> {/* espaço reservado para manter o título centralizado */}
+      <h1 style={styles.title}>Inatel Box</h1>
+      <div style={{ width: 75 }} /> {}
     </nav>
   );
 };
@@ -41,8 +41,15 @@ const styles = {
   },
   title: {
     margin: 0,
-    fontSize: '20px',
+    fontSize: '22px',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    padding: '12px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     fontWeight: 'bold',
+    
   },
 };
 

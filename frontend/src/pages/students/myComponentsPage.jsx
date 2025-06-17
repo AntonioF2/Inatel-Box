@@ -1,147 +1,194 @@
 import React, { useEffect, useState } from 'react';
-import { listComponents } from '../../services/api';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../../services/fireBaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 const MyComponentsPage = () => {
   const [myComponents, setMyComponents] = useState([]);
-  const [matricula, setMatricula] = useState(null);
+  const [matricula, setMatricula] = useState('');
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchMatriculaAndComponents = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        console.log('Nenhum usuário logado');
-        return;
-      }
-
+    const fetchUserAndComponents = async () => {
       try {
+        const user = auth.currentUser;
+        if (!user) {
+          console.error('Usuário não autenticado');
+          navigate('/login');
+          return;
+        }
+
         const userDocRef = doc(db, 'usuarios', user.uid);
-        const userDoc = await getDoc(userDocRef);
+        const userSnapshot = await getDoc(userDocRef);
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const userMatricula = userData.matricula;
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.data();
+          const userMatricula = userData?.matricula;
           setMatricula(userMatricula);
-          console.log('Matrícula do usuário:', userMatricula);
 
-          // Agora busca os componentes filtrando pela matrícula
-          const data = await listComponents();
-          const filteredComponents = data.filter(
-            (component) => component.emprestadoPara === userMatricula
-          );
-          setMyComponents(filteredComponents);
+          const componentsRef = collection(db, 'componentes');
+          const q = query(componentsRef, where('emprestadoPara', '==', userMatricula));
+          const querySnapshot = await getDocs(q);
+
+          const components = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          setMyComponents(components);
         } else {
-          console.log('Usuário não encontrado no banco');
+          console.error('Usuário não encontrado no Firestore');
         }
       } catch (error) {
-        console.error('Erro ao buscar matrícula ou componentes:', error);
+        console.error('Erro ao buscar dados:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchMatriculaAndComponents();
-  }, []);
+    fetchUserAndComponents();
+  }, [navigate]);
 
   const handleLogout = async () => {
+    try {
       await auth.signOut();
       navigate('/login');
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    }
+  };
+
+  const handleGoToSearch = () => {
+    navigate('/search-components');
   };
 
   return (
-  <div style={styles.container}>
-    <div style={styles.header}>
-      <h2>Bem Vindo, {matricula || 'Usuario'}</h2>
-      {}
-      <div style={styles.buttonGroup}>
-        <button onClick={() => navigate('/search-components')} style={styles.button}>
-          Procurar Componente
-        </button>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h1 style={styles.title}>Bem-vindo, {matricula || 'Usuário'}</h1>
 
-        <button onClick={handleLogout} style={styles.logoutButton}>
-          Sair
-        </button>
+        <div style={styles.buttonGroup}>
+          <button onClick={handleGoToSearch} style={styles.primaryButton}>
+            Procurar Componente
+          </button>
+          <button onClick={handleLogout} style={styles.secondaryButton}>
+            Sair
+          </button>
+        </div>
+
+        {loading ? (
+          <p style={styles.noResult}>Carregando seus componentes...</p>
+        ) : myComponents.length === 0 ? (
+          <p style={styles.noResult}>Nenhum componente emprestado.</p>
+        ) : (
+          <>
+            <h2 style={styles.title}>Meus Componentes Emprestados</h2>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Tipo</th>
+                  <th style={styles.th}>Especificação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myComponents.map((component, index) => (
+                  <tr
+                    key={component.id}
+                    style={index % 2 === 0 ? styles.rowEven : styles.rowOdd}
+                  >
+                    <td style={styles.td}>{component.tipo}</td>
+                    <td style={styles.td}>{component.especificacao}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </div>
     </div>
-
-    {!matricula && <p>Carregando informações do usuário...</p>}
-
-    <ul>
-      {myComponents.length > 0 ? (
-        myComponents.map((component) => (
-          <li key={component.id}>
-            {component.nome} - Quantidade: {component.quantidade}
-          </li>
-        ))
-      ) : (
-        <p>Nenhum componente emprestado para sua matrícula.</p>
-      )}
-    </ul>
-  </div>
-)};
+  );
+};
 
 const styles = {
-  container: { padding: '20px' },
-  header: { 
-    display: 'flex', 
-    alignItems: 'center', 
-    gap: '40%', 
-    marginBottom: '20px' 
+  container: {
+    minHeight: '80vh',
+    backgroundColor: '#f0f2f5',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '30px 10px',
+    fontFamily: 'Arial, sans-serif',
+    background: 'linear-gradient(135deg, #e0f7fa, #ffffff)',
   },
-   searchButton: {
-    padding: '8px 16px',
-    fontSize: '14px',
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: '8px',
+    padding: '30px 25px',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+    width: '100%',
+    maxWidth: '1000px',
+    boxSizing: 'border-box',
+  },
+  title: {
+    fontSize: '24px',
+    color: '#333',
+    marginBottom: '25px',
+    textAlign: 'center',
+  },
+  buttonGroup: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '15px',
+    marginBottom: '25px',
+  },
+  primaryButton: {
+    padding: '10px 25px',
     backgroundColor: '#007bff',
     color: '#fff',
     border: 'none',
-    borderRadius: '5px',
+    borderRadius: '6px',
     cursor: 'pointer',
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '10px', // espaço entre os botões
-    marginBottom: '20px', // espaço abaixo dos botões
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '10px',
-    marginBottom: '20px',
-  },
-  welcomeTitle: {
-    margin: 0,
-  },
-  button: {
-    padding: '10px 20px',
+    fontWeight: '600',
     fontSize: '16px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
+    transition: 'background-color 0.3s',
   },
-  logoutButton: {
-    padding: '10px 20px',
-    fontSize: '16px',
-    backgroundColor: '#dc3545',
-    color: 'white',
+  secondaryButton: {
+    padding: '10px 25px',
+    backgroundColor: '#e74c3c',
+    color: '#fff',
     border: 'none',
-    borderRadius: '5px',
+    borderRadius: '6px',
     cursor: 'pointer',
+    fontWeight: '600',
+    fontSize: '16px',
+    transition: 'background-color 0.3s',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    alignItems: 'center',
+    marginTop: '15px',
   },
   th: {
-    borderBottom: '2px solid #ccc',
-    padding: '15px 10px',
+    backgroundColor: '#007bff',
+    color: '#fff',
+    padding: '12px 15px',
     textAlign: 'left',
   },
   td: {
-    padding: '15px 10px',
-    borderBottom: '1px solid #eee',
+    padding: '12px 15px',
+    borderBottom: '1px solid #eaeaea',
+  },
+  rowEven: {
+    backgroundColor: '#f9f9f9',
+  },
+  rowOdd: {
+    backgroundColor: '#fff',
+  },
+  noResult: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: '16px',
   },
 };
 

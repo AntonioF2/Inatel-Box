@@ -55,6 +55,10 @@ const listComponents = async (req, res) => {
       query = query.where('especificacao', '==', especificacao);
     }
 
+    if (emprestadoPara) {
+      query = query.where('emprestadoPara', '==', emprestadoPara);
+    }
+
     const componentsSnapshot = await query.get();
 
     const components = [];
@@ -137,6 +141,5 @@ const deleteComponent = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 module.exports = { addComponent, listComponents, borrowComponent, returnComponent, deleteComponent  };
